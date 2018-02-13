@@ -2,7 +2,7 @@
 
 | Bintray | Appveyor | Travis |
 |---------|-----------|--------|
-|[![Download](https://api.bintray.com/packages/bincrafters/public-conan/cygwin_installer%3Abincrafters/images/download.svg) ](https://bintray.com/bincrafters/public-conan/cygwin_installer%3Abincrafters/_latestVersion)|[![Build status](https://ci.appveyor.com/api/projects/status/github/bincrafters/conan-cygwin_installer?svg=true)](https://ci.appveyor.com/project/bincrafters/conan-cygwin_installer)|N/A
+|[![Download](https://api.bintray.com/packages/bincrafters/public-conan/cygwin_installer%3Abincrafters/images/download.svg) ](https://bintray.com/bincrafters/public-conan/cygwin_installer%3Abincrafters/_latestVersion)|[![Build status](https://ci.appveyor.com/api/projects/status/github/bincrafters/conan-cygwin_installer?svg=true)](https://ci.appveyor.com/project/BinCrafters/conan-cygwin-installer)|N/A
 
 ## Conan.io Information
 
