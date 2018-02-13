@@ -9,6 +9,6 @@ if __name__ == "__main__":
 
     builder = build_template_installer.get_builder()
 
-    builder.add({"arch": os.environ["CONAN_ARCHS"]}, {}, {}, {})
+    builder.add({"arch_build": os.environ["CONAN_ARCHS"]}, {}, {}, {})
 
     builder.run()
