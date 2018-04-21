@@ -20,8 +20,20 @@ class CygwinInstallerConan(ConanFile):
         settings = {"os_build": ["Windows"], "arch_build": ["x86", "x86_64"]}
     install_dir = 'cygwin-install'
     short_paths = True
-    options = {"additional_packages": "ANY"}
-    default_options = "additional_packages=None" # Colon separated, https://cygwin.com/packages/package_list.html
+    options = {"additional_packages": "ANY",  # Colon separated, https://cygwin.com/packages/package_list.html
+               "no_acl": [True, False],
+               "cygwin": "ANY",  # https://cygwin.com/cygwin-ug-net/using-cygwinenv.html
+               "db_enum": "ANY",  # https://cygwin.com/cygwin-ug-net/ntsec.html#ntsec-mapping-nsswitch
+               "db_home": "ANY",
+               "db_shell": "ANY",
+               "db_gecos": "ANY"}
+    default_options = "additional_packages=None", \
+                      "no_acl=False", \
+                      "cygwin=None", \
+                      "db_enum=None", \
+                      "db_home=None", \
+                      "db_shell=None", \
+                      "db_gecos=None"
 
     @property
     def os(self):
@@ -70,6 +82,26 @@ class CygwinInstallerConan(ConanFile):
         with open(tmp_name, 'a'):
             os.utime(tmp_name, None)
 
+        def add_line(line):
+            nsswitch_conf = os.path.join(self.install_dir, 'etc', 'nsswitch.conf')
+            with open(nsswitch_conf, 'a') as f:
+                f.write('%s\n' % line)
+
+        if self.options.db_enum:
+            add_line('db_enum: %s' % self.options.db_enum)
+        if self.options.db_home:
+            add_line('db_home: %s' % self.options.db_home)
+        if self.options.db_shell:
+            add_line('db_shell: %s' % self.options.db_shell)
+        if self.options.db_gecos:
+            add_line('db_gecos: %s' % self.options.db_gecos)
+
+        if self.options.no_acl:
+            fstab = os.path.join(self.install_dir, 'etc', 'fstab')
+            tools.replace_in_file(fstab,
+                                  'none /cygdrive cygdrive binary,posix=0,user 0 0',
+                                  'none /cygdrive cygdrive noacl,binary,posix=0,user 0 0')
+
     def package(self):
         self.copy(pattern="*", dst=".", src=self.install_dir)
 
@@ -93,3 +125,7 @@ class CygwinInstallerConan(ConanFile):
 
         self.output.info("Appending PATH env var with : " + cygwin_bin)
         self.env_info.path.append(cygwin_bin)
+
+        if self.options.cygwin:
+            self.output.info("Creating CYGWIN env var : %s" % self.options.cygwin)
+            self.env_info.CYGWIN = self.options.cygwin
