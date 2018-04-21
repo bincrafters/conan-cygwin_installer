@@ -3,6 +3,7 @@
 
 from conans import ConanFile, tools
 import os
+import tempfile
 from conans import __version__ as conan_version
 from conans.model.version import Version
 
@@ -50,6 +51,7 @@ class CygwinInstallerConan(ConanFile):
         command += ' --root %s' % os.path.abspath(self.install_dir)
         # TODO : download and parse mirror list, probably also select the best one
         command += ' -s http://cygwin.mirror.constant.com'
+        command += ' --local-package-dir %s' % tempfile.mkdtemp()
         packages = ['pkg-config', 'make', 'libtool', 'binutils', 'gcc-core', 'gcc-g++',
                     'autoconf', 'automake', 'gettext']
         if self.options.additional_packages:
