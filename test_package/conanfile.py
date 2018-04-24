@@ -16,3 +16,4 @@ class TestPackage(ConanFile):
             raise ConanException("No instance of bash.exe could be found on %PATH%")
 
         self.run('bash.exe -c ^"uname -a^"')
+        self.run('bash.exe -c ^"test -L /etc/networks^"')
