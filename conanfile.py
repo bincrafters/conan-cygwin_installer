@@ -1,11 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from conans import ConanFile, tools
+from conans import ConanFile, tools, util, errors
 import os
 import tempfile
-import win32api
-import win32con
+import subprocess
 import json
 from conans import __version__ as conan_version
 from conans.model.version import Version
@@ -115,12 +114,17 @@ none /cygdrive cygdrive binary,posix=0,user 0 0""",
 
     def record_symlinks(self):
         symlinks = []
-        with tools.chdir(self.install_dir):
-            for root, _, files in os.walk("."):
-                for name in files:
-                    path = os.path.join(root, name)
-                    if win32api.GetFileAttributes(path) & win32con.FILE_ATTRIBUTE_SYSTEM:
-                        symlinks.append(path)
+        root = os.path.join(self.build_folder, self.install_dir)
+        try:
+            output = subprocess.check_output(["attrib", "/S", "/D", os.path.join(root, '*')])
+            lines = util.files.decode_text(output).split("\r\n")
+        except (ValueError, FileNotFoundError, subprocess.CalledProcessError, UnicodeDecodeError) as e:
+            raise errors.ConanException("attrib run error: %s" % str(e))
+        for line in lines:
+            flags = line[:21]
+            path = line[21:]
+            if "S" in flags:
+                symlinks.append(os.path.relpath(path, root))
         symlinks_json = os.path.join(self.package_folder, "symlinks.json")
         tools.save(symlinks_json, json.dumps(symlinks))
 
@@ -133,9 +137,7 @@ none /cygdrive cygdrive binary,posix=0,user 0 0""",
         symlinks = json.loads(tools.load(symlinks_json))
         for path in symlinks:
             full_path = os.path.join(self.package_folder, path)
-            attrs = win32api.GetFileAttributes(full_path)
-            if not attrs & win32con.FILE_ATTRIBUTE_SYSTEM:
-                win32api.SetFileAttributes(full_path, attrs | win32con.FILE_ATTRIBUTE_SYSTEM)
+            self.run('attrib +S "%s"' % full_path)
 
     def package_info(self):
         # workaround for error "cannot execute binary file: Exec format error"
