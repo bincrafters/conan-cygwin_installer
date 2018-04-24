@@ -102,8 +102,12 @@ class CygwinInstallerConan(ConanFile):
         if self.options.no_acl:
             fstab = os.path.join(self.install_dir, 'etc', 'fstab')
             tools.replace_in_file(fstab,
-                                  'none /cygdrive cygdrive binary,posix=0,user 0 0',
-                                  'none /cygdrive cygdrive noacl,binary,posix=0,user 0 0')
+"""# This is default anyway:
+none /cygdrive cygdrive binary,posix=0,user 0 0""",
+"""none /cygdrive cygdrive noacl,binary,posix=0,user 0 0
+{0}/bin /usr/bin ntfs binary,auto,noacl           0 0
+{0}/lib /usr/lib ntfs binary,auto,noacl           0 0
+{0}     /        ntfs override,binary,auto,noacl  0 0""".format(self.package_folder.replace('\\', '/')))
 
     def record_symlinks(self):
         symlinks = []
