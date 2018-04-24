@@ -6,6 +6,7 @@ import os
 import tempfile
 import subprocess
 import json
+import re
 from conans import __version__ as conan_version
 from conans.model.version import Version
 
@@ -120,11 +121,14 @@ none /cygdrive cygdrive binary,posix=0,user 0 0""",
             lines = util.files.decode_text(output).split("\r\n")
         except (ValueError, FileNotFoundError, subprocess.CalledProcessError, UnicodeDecodeError) as e:
             raise errors.ConanException("attrib run error: %s" % str(e))
+        attrib_re = re.compile(r'^([RASHOIXVPU ]+ )([A-Z]:.*)')
         for line in lines:
-            flags = line[:21]
-            path = line[21:]
-            if "S" in flags:
-                symlinks.append(os.path.relpath(path, root))
+            match_obj = attrib_re.match(line)
+            if match_obj:
+                flags = match_obj.group(1)
+                path = match_obj.group(2)
+                if "S" in flags:
+                    symlinks.append(os.path.relpath(path, root))
         symlinks_json = os.path.join(self.package_folder, "symlinks.json")
         tools.save(symlinks_json, json.dumps(symlinks))
 
@@ -137,7 +141,7 @@ none /cygdrive cygdrive binary,posix=0,user 0 0""",
         symlinks = json.loads(tools.load(symlinks_json))
         for path in symlinks:
             full_path = os.path.join(self.package_folder, path)
-            self.run('attrib +S "%s"' % full_path)
+            self.run('attrib -R +S "%s"' % full_path)
 
     def package_info(self):
         # workaround for error "cannot execute binary file: Exec format error"
