@@ -23,14 +23,16 @@ class CygwinInstallerConan(ConanFile):
         settings = {"os_build": ["Windows"], "arch_build": ["x86", "x86_64"]}
     install_dir = 'cygwin-install'
     short_paths = True
-    options = {"additional_packages": "ANY",  # Colon separated, https://cygwin.com/packages/package_list.html
+    options = {"packages": "ANY",  # Colon separated, https://cygwin.com/packages/package_list.html
+               "additional_packages": "ANY",  # Colon separated, https://cygwin.com/packages/package_list.html
                "no_acl": [True, False],
                "cygwin": "ANY",  # https://cygwin.com/cygwin-ug-net/using-cygwinenv.html
                "db_enum": "ANY",  # https://cygwin.com/cygwin-ug-net/ntsec.html#ntsec-mapping-nsswitch
                "db_home": "ANY",
                "db_shell": "ANY",
                "db_gecos": "ANY"}
-    default_options = "additional_packages=None", \
+    default_options = "packages=pkg-config,make,libtool,binutils,gcc-core,gcc-g++,autoconf,automake,gettext", \
+                      "additional_packages=None", \
                       "no_acl=False", \
                       "cygwin=None", \
                       "db_enum=None", \
@@ -67,11 +69,13 @@ class CygwinInstallerConan(ConanFile):
         # TODO : download and parse mirror list, probably also select the best one
         command += ' -s http://cygwin.mirror.constant.com'
         command += ' --local-package-dir %s' % tempfile.mkdtemp()
-        packages = ['pkg-config', 'make', 'libtool', 'binutils', 'gcc-core', 'gcc-g++',
-                    'autoconf', 'automake', 'gettext']
+        packages = []
+        if self.options.packages:
+            packages.extend(str(self.options.packages).split(","))
         if self.options.additional_packages:
             packages.extend(str(self.options.additional_packages).split(","))
-        command += ' --packages %s' % ','.join(packages)
+        if packages:
+            command += ' --packages %s' % ','.join(packages)
         self.run(command)
 
         os.unlink(filename)
