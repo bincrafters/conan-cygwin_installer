@@ -70,7 +70,7 @@ class CygwinInstallerConan(ConanFile):
         packages = ['pkg-config', 'make', 'libtool', 'binutils', 'gcc-core', 'gcc-g++',
                     'autoconf', 'automake', 'gettext']
         if self.options.additional_packages:
-            packages.extend(",".split(str(self.options.additional_packages)))
+            packages.extend(str(self.options.additional_packages).split(","))
         command += ' --packages %s' % ','.join(packages)
         self.run(command)
 
