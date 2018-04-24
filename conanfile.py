@@ -1,9 +1,12 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from conans import ConanFile, tools
+from conans import ConanFile, tools, util, errors
 import os
 import tempfile
+import subprocess
+import json
+import re
 from conans import __version__ as conan_version
 from conans.model.version import Version
 
@@ -20,14 +23,16 @@ class CygwinInstallerConan(ConanFile):
         settings = {"os_build": ["Windows"], "arch_build": ["x86", "x86_64"]}
     install_dir = 'cygwin-install'
     short_paths = True
-    options = {"additional_packages": "ANY",  # Colon separated, https://cygwin.com/packages/package_list.html
+    options = {"packages": "ANY",  # Colon separated, https://cygwin.com/packages/package_list.html
+               "additional_packages": "ANY",  # Colon separated, https://cygwin.com/packages/package_list.html
                "no_acl": [True, False],
                "cygwin": "ANY",  # https://cygwin.com/cygwin-ug-net/using-cygwinenv.html
                "db_enum": "ANY",  # https://cygwin.com/cygwin-ug-net/ntsec.html#ntsec-mapping-nsswitch
                "db_home": "ANY",
                "db_shell": "ANY",
                "db_gecos": "ANY"}
-    default_options = "additional_packages=None", \
+    default_options = "packages=pkg-config,make,libtool,binutils,gcc-core,gcc-g++,autoconf,automake,gettext", \
+                      "additional_packages=None", \
                       "no_acl=False", \
                       "cygwin=None", \
                       "db_enum=None", \
@@ -64,11 +69,13 @@ class CygwinInstallerConan(ConanFile):
         # TODO : download and parse mirror list, probably also select the best one
         command += ' -s http://cygwin.mirror.constant.com'
         command += ' --local-package-dir %s' % tempfile.mkdtemp()
-        packages = ['pkg-config', 'make', 'libtool', 'binutils', 'gcc-core', 'gcc-g++',
-                    'autoconf', 'automake', 'gettext']
+        packages = []
+        if self.options.packages:
+            packages.extend(str(self.options.packages).split(","))
         if self.options.additional_packages:
-            packages.extend(",".split(str(self.options.additional_packages)))
-        command += ' --packages %s' % ','.join(packages)
+            packages.extend(str(self.options.additional_packages).split(","))
+        if packages:
+            command += ' --packages %s' % ','.join(packages)
         self.run(command)
 
         os.unlink(filename)
@@ -99,15 +106,42 @@ class CygwinInstallerConan(ConanFile):
         if self.options.no_acl:
             fstab = os.path.join(self.install_dir, 'etc', 'fstab')
             tools.replace_in_file(fstab,
-                                  'none /cygdrive cygdrive binary,posix=0,user 0 0',
-                                  'none /cygdrive cygdrive noacl,binary,posix=0,user 0 0')
+"""# This is default anyway:
+none /cygdrive cygdrive binary,posix=0,user 0 0""",
+"""none /cygdrive cygdrive noacl,binary,posix=0,user 0 0
+{0}/bin /usr/bin ntfs binary,auto,noacl           0 0
+{0}/lib /usr/lib ntfs binary,auto,noacl           0 0
+{0}     /        ntfs override,binary,auto,noacl  0 0""".format(self.package_folder.replace('\\', '/')))
+
+    def record_symlinks(self):
+        symlinks = []
+        root = os.path.join(self.build_folder, self.install_dir)
+        try:
+            output = subprocess.check_output(["attrib", "/S", "/D", os.path.join(root, '*')])
+            lines = util.files.decode_text(output).split("\r\n")
+        except (ValueError, FileNotFoundError, subprocess.CalledProcessError, UnicodeDecodeError) as e:
+            raise errors.ConanException("attrib run error: %s" % str(e))
+        attrib_re = re.compile(r'^([RASHOIXVPU ]+ )([A-Z]:.*)')
+        for line in lines:
+            match_obj = attrib_re.match(line)
+            if match_obj:
+                flags = match_obj.group(1)
+                path = match_obj.group(2)
+                if "S" in flags:
+                    symlinks.append(os.path.relpath(path, root))
+        symlinks_json = os.path.join(self.package_folder, "symlinks.json")
+        tools.save(symlinks_json, json.dumps(symlinks))
 
     def package(self):
+        self.record_symlinks()
         self.copy(pattern="*", dst=".", src=self.install_dir)
 
     def fix_symlinks(self):
-        path = os.path.join(self.package_folder, 'bin', '*')
-        self.run('attrib -r +s /D "%s" /S /L' % path)
+        symlinks_json = os.path.join(self.package_folder, "symlinks.json")
+        symlinks = json.loads(tools.load(symlinks_json))
+        for path in symlinks:
+            full_path = os.path.join(self.package_folder, path)
+            self.run('attrib -R +S "%s"' % full_path)
 
     def package_info(self):
         # workaround for error "cannot execute binary file: Exec format error"
@@ -116,10 +150,10 @@ class CygwinInstallerConan(ConanFile):
 
         cygwin_root = self.package_folder
         cygwin_bin = os.path.join(cygwin_root, "bin")
-        
+
         self.output.info("Creating CYGWIN_ROOT env var : %s" % cygwin_root)
         self.env_info.CYGWIN_ROOT = cygwin_root
-        
+
         self.output.info("Creating CYGWIN_BIN env var : %s" % cygwin_bin)
         self.env_info.CYGWIN_BIN = cygwin_bin
 
