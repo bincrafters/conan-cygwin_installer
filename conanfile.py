@@ -162,4 +162,4 @@ none /cygdrive cygdrive binary,posix=0,user 0 0""",
 
         if self.options.cygwin:
             self.output.info("Creating CYGWIN env var : %s" % self.options.cygwin)
-            self.env_info.CYGWIN = self.options.cygwin
+            self.env_info.CYGWIN = str(self.options.cygwin)
