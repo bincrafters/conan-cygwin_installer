@@ -4,6 +4,9 @@
 from conans import ConanFile, tools
 import os
 import tempfile
+import win32api
+import win32con
+import json
 from conans import __version__ as conan_version
 from conans.model.version import Version
 
@@ -102,12 +105,29 @@ class CygwinInstallerConan(ConanFile):
                                   'none /cygdrive cygdrive binary,posix=0,user 0 0',
                                   'none /cygdrive cygdrive noacl,binary,posix=0,user 0 0')
 
+    def record_symlinks(self):
+        symlinks = []
+        with tools.chdir(self.install_dir):
+            for root, _, files in os.walk("."):
+                for name in files:
+                    path = os.path.join(root, name)
+                    if win32api.GetFileAttributes(path) & win32con.FILE_ATTRIBUTE_SYSTEM:
+                        symlinks.append(path)
+        symlinks_json = os.path.join(self.package_folder, "symlinks.json")
+        tools.save(symlinks_json, json.dumps(symlinks))
+
     def package(self):
+        self.record_symlinks()
         self.copy(pattern="*", dst=".", src=self.install_dir)
 
     def fix_symlinks(self):
-        path = os.path.join(self.package_folder, 'bin', '*')
-        self.run('attrib -r +s /D "%s" /S /L' % path)
+        symlinks_json = os.path.join(self.package_folder, "symlinks.json")
+        symlinks = json.loads(tools.load(symlinks_json))
+        for path in symlinks:
+            full_path = os.path.join(self.package_folder, path)
+            attrs = win32api.GetFileAttributes(full_path)
+            if not attrs & win32con.FILE_ATTRIBUTE_SYSTEM:
+                win32api.SetFileAttributes(full_path, attrs | win32con.FILE_ATTRIBUTE_SYSTEM)
 
     def package_info(self):
         # workaround for error "cannot execute binary file: Exec format error"
@@ -116,10 +136,10 @@ class CygwinInstallerConan(ConanFile):
 
         cygwin_root = self.package_folder
         cygwin_bin = os.path.join(cygwin_root, "bin")
-        
+
         self.output.info("Creating CYGWIN_ROOT env var : %s" % cygwin_root)
         self.env_info.CYGWIN_ROOT = cygwin_root
-        
+
         self.output.info("Creating CYGWIN_BIN env var : %s" % cygwin_bin)
         self.env_info.CYGWIN_BIN = cygwin_bin
 
