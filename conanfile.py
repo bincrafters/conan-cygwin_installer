@@ -23,8 +23,9 @@ class CygwinInstallerConan(ConanFile):
         settings = {"os_build": ["Windows"], "arch_build": ["x86", "x86_64"]}
     install_dir = 'cygwin-install'
     short_paths = True
-    options = {"packages": "ANY",  # Colon separated, https://cygwin.com/packages/package_list.html
-               "additional_packages": "ANY",  # Colon separated, https://cygwin.com/packages/package_list.html
+    options = {"packages": "ANY",  # Comma separated, https://cygwin.com/packages/package_list.html
+               "additional_packages": "ANY",  # Comma separated, https://cygwin.com/packages/package_list.html
+               "exclude_files": "ANY", # Comma separated list of file patterns to exclude from the package
                "no_acl": [True, False],
                "cygwin": "ANY",  # https://cygwin.com/cygwin-ug-net/using-cygwinenv.html
                "db_enum": "ANY",  # https://cygwin.com/cygwin-ug-net/ntsec.html#ntsec-mapping-nsswitch
@@ -33,6 +34,7 @@ class CygwinInstallerConan(ConanFile):
                "db_gecos": "ANY"}
     default_options = "packages=pkg-config,make,libtool,binutils,gcc-core,gcc-g++,autoconf,automake,gettext", \
                       "additional_packages=None", \
+                      "exclude_files=None", \
                       "no_acl=False", \
                       "cygwin=None", \
                       "db_enum=None", \
@@ -134,7 +136,10 @@ none /cygdrive cygdrive binary,posix=0,user 0 0""",
 
     def package(self):
         self.record_symlinks()
-        self.copy(pattern="*", dst=".", src=self.install_dir)
+        excludes = None
+        if self.options.exclude_files:
+            excludes = tuple(str(self.options.exclude_files).split(","))
+        self.copy(pattern="*", dst=".", src=self.install_dir, excludes=excludes)
 
     def fix_symlinks(self):
         symlinks_json = os.path.join(self.package_folder, "symlinks.json")
