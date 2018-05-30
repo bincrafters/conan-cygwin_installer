@@ -8,6 +8,7 @@ import tempfile
 import subprocess
 import json
 import re
+import shutil
 from conans import __version__ as conan_version
 from conans.model.version import Version
 
@@ -108,13 +109,15 @@ class CygwinInstallerConan(ConanFile):
 
         if self.options.no_acl:
             fstab = os.path.join(self.install_dir, 'etc', 'fstab')
-            tools.replace_in_file(fstab,
+            fstab_in = fstab + ".in"
+            shutil.copyfile(fstab, fstab_in)
+            tools.replace_in_file(fstab_in,
 """# This is default anyway:
 none /cygdrive cygdrive binary,posix=0,user 0 0""",
 """none /cygdrive cygdrive noacl,binary,posix=0,user 0 0
-{0}/bin /usr/bin ntfs binary,auto,noacl           0 0
-{0}/lib /usr/lib ntfs binary,auto,noacl           0 0
-{0}     /        ntfs override,binary,auto,noacl  0 0""".format(self.package_folder.replace('\\', '/')))
+@CYGWIN_ROOT@/bin /usr/bin ntfs binary,auto,noacl           0 0
+@CYGWIN_ROOT@/lib /usr/lib ntfs binary,auto,noacl           0 0
+@CYGWIN_ROOT@     /        ntfs override,binary,auto,noacl  0 0""")
 
     def record_symlinks(self):
         symlinks = []
@@ -158,7 +161,13 @@ none /cygdrive cygdrive binary,posix=0,user 0 0""",
         self.fix_symlinks()
 
         cygwin_root = self.package_folder
+        cygwin_root_fs = cygwin_root.replace('\\', '/')
         cygwin_bin = os.path.join(cygwin_root, "bin")
+
+        fstab = os.path.join(cygwin_root, 'etc', 'fstab')
+        self.output.info("Updating /etc/fstab")
+        shutil.copyfile(fstab+".in", fstab)
+        tools.replace_in_file(fstab, "@CYGWIN_ROOT@", cygwin_root_fs)
 
         self.output.info("Creating CYGWIN_ROOT env var : %s" % cygwin_root)
         self.env_info.CYGWIN_ROOT = cygwin_root
