@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from conans import ConanFile, tools, util, errors
+from conans import ConanFile, tools, util
+from conans.errors import ConanException
 import os
 import tempfile
 import subprocess
@@ -122,7 +123,7 @@ none /cygdrive cygdrive binary,posix=0,user 0 0""",
             output = subprocess.check_output(["attrib", "/S", "/D", os.path.join(root, '*')])
             lines = util.files.decode_text(output).split("\r\n")
         except (ValueError, IOError, subprocess.CalledProcessError, UnicodeDecodeError) as e:
-            raise errors.ConanException("attrib run error: %s" % str(e))
+            raise ConanException("attrib run error: %s" % str(e))
         attrib_re = re.compile(r'^([RASHOIXVPU ]+ )([A-Z]:.*)')
         for line in lines:
             match_obj = attrib_re.match(line)
