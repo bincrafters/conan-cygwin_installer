@@ -149,6 +149,9 @@ none /cygdrive cygdrive binary,posix=0,user 0 0""",
             full_path = os.path.join(self.package_folder, path)
             self.run('attrib -R +S "%s"' % full_path)
 
+    def package_id(self):
+        del self.info.options.cygwin
+
     def package_info(self):
         # workaround for error "cannot execute binary file: Exec format error"
         # symbolic links must have system attribute in order to work properly
