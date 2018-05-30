@@ -121,7 +121,7 @@ none /cygdrive cygdrive binary,posix=0,user 0 0""",
         try:
             output = subprocess.check_output(["attrib", "/S", "/D", os.path.join(root, '*')])
             lines = util.files.decode_text(output).split("\r\n")
-        except (ValueError, FileNotFoundError, subprocess.CalledProcessError, UnicodeDecodeError) as e:
+        except (ValueError, IOError, subprocess.CalledProcessError, UnicodeDecodeError) as e:
             raise errors.ConanException("attrib run error: %s" % str(e))
         attrib_re = re.compile(r'^([RASHOIXVPU ]+ )([A-Z]:.*)')
         for line in lines:
