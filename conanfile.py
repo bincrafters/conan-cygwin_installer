@@ -1,12 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from conans import ConanFile, tools, util, errors
+from conans import ConanFile, tools, util
+from conans.errors import ConanException
 import os
 import tempfile
 import subprocess
 import json
 import re
+import shutil
 from conans import __version__ as conan_version
 from conans.model.version import Version
 
@@ -107,13 +109,15 @@ class CygwinInstallerConan(ConanFile):
 
         if self.options.no_acl:
             fstab = os.path.join(self.install_dir, 'etc', 'fstab')
-            tools.replace_in_file(fstab,
+            fstab_in = fstab + ".in"
+            shutil.copyfile(fstab, fstab_in)
+            tools.replace_in_file(fstab_in,
 """# This is default anyway:
 none /cygdrive cygdrive binary,posix=0,user 0 0""",
 """none /cygdrive cygdrive noacl,binary,posix=0,user 0 0
-{0}/bin /usr/bin ntfs binary,auto,noacl           0 0
-{0}/lib /usr/lib ntfs binary,auto,noacl           0 0
-{0}     /        ntfs override,binary,auto,noacl  0 0""".format(self.package_folder.replace('\\', '/')))
+@CYGWIN_ROOT@/bin /usr/bin ntfs binary,auto,noacl           0 0
+@CYGWIN_ROOT@/lib /usr/lib ntfs binary,auto,noacl           0 0
+@CYGWIN_ROOT@     /        ntfs override,binary,auto,noacl  0 0""")
 
     def record_symlinks(self):
         symlinks = []
@@ -121,8 +125,8 @@ none /cygdrive cygdrive binary,posix=0,user 0 0""",
         try:
             output = subprocess.check_output(["attrib", "/S", "/D", os.path.join(root, '*')])
             lines = util.files.decode_text(output).split("\r\n")
-        except (ValueError, FileNotFoundError, subprocess.CalledProcessError, UnicodeDecodeError) as e:
-            raise errors.ConanException("attrib run error: %s" % str(e))
+        except (ValueError, IOError, subprocess.CalledProcessError, UnicodeDecodeError) as e:
+            raise ConanException("attrib run error: %s" % str(e))
         attrib_re = re.compile(r'^([RASHOIXVPU ]+ )([A-Z]:.*)')
         for line in lines:
             match_obj = attrib_re.match(line)
@@ -148,13 +152,22 @@ none /cygdrive cygdrive binary,posix=0,user 0 0""",
             full_path = os.path.join(self.package_folder, path)
             self.run('attrib -R +S "%s"' % full_path)
 
+    def package_id(self):
+        del self.info.options.cygwin
+
     def package_info(self):
         # workaround for error "cannot execute binary file: Exec format error"
         # symbolic links must have system attribute in order to work properly
         self.fix_symlinks()
 
         cygwin_root = self.package_folder
+        cygwin_root_fs = cygwin_root.replace('\\', '/')
         cygwin_bin = os.path.join(cygwin_root, "bin")
+
+        fstab = os.path.join(cygwin_root, 'etc', 'fstab')
+        self.output.info("Updating /etc/fstab")
+        shutil.copyfile(fstab+".in", fstab)
+        tools.replace_in_file(fstab, "@CYGWIN_ROOT@", cygwin_root_fs)
 
         self.output.info("Creating CYGWIN_ROOT env var : %s" % cygwin_root)
         self.env_info.CYGWIN_ROOT = cygwin_root

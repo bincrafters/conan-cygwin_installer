@@ -2,11 +2,13 @@
 # -*- coding: utf-8 -*-
 
 from conans import ConanFile, tools
+from conans.errors import ConanException
 import os
 
 
 class TestPackage(ConanFile):
-    default_options = "cygwin_installer:exclude_files=*/link.exe"
+    default_options = "cygwin_installer:no_acl=True", \
+                      "cygwin_installer:exclude_files=*/link.exe"
 
     def test(self):
         bash = tools.which("bash.exe")
@@ -16,6 +18,7 @@ class TestPackage(ConanFile):
         else:
             raise ConanException("No instance of bash.exe could be found on %PATH%")
 
+        self.run('cygcheck -c')
         self.run('bash.exe -c ^"uname -a^"')
         self.run('bash.exe -c ^"test -L /etc/networks^"')
         self.run('bash.exe -c ^"! test -f /bin/link"')
