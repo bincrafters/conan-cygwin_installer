@@ -164,10 +164,11 @@ none /cygdrive cygdrive binary,posix=0,user 0 0""",
         cygwin_root_fs = cygwin_root.replace('\\', '/')
         cygwin_bin = os.path.join(cygwin_root, "bin")
 
-        fstab = os.path.join(cygwin_root, 'etc', 'fstab')
-        self.output.info("Updating /etc/fstab")
-        shutil.copyfile(fstab+".in", fstab)
-        tools.replace_in_file(fstab, "@CYGWIN_ROOT@", cygwin_root_fs)
+        if self.options.no_acl:
+            fstab = os.path.join(cygwin_root, 'etc', 'fstab')
+            self.output.info("Updating /etc/fstab")
+            shutil.copyfile(fstab + ".in", fstab)
+            tools.replace_in_file(fstab, "@CYGWIN_ROOT@", cygwin_root_fs)
 
         self.output.info("Creating CYGWIN_ROOT env var : %s" % cygwin_root)
         self.env_info.CYGWIN_ROOT = cygwin_root
