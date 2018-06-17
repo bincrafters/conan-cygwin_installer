@@ -27,14 +27,15 @@ class CygwinInstallerConan(ConanFile):
     short_paths = True
     options = {"packages": "ANY",  # Comma separated, https://cygwin.com/packages/package_list.html
                "additional_packages": "ANY",  # Comma separated, https://cygwin.com/packages/package_list.html
-               "exclude_files": "ANY", # Comma separated list of file patterns to exclude from the package
+               "exclude_files": "ANY",  # Comma separated list of file patterns to exclude from the package
                "no_acl": [True, False],
                "cygwin": "ANY",  # https://cygwin.com/cygwin-ug-net/using-cygwinenv.html
                "db_enum": "ANY",  # https://cygwin.com/cygwin-ug-net/ntsec.html#ntsec-mapping-nsswitch
                "db_home": "ANY",
                "db_shell": "ANY",
-               "db_gecos": "ANY"}
-    default_options = "packages=pkg-config,make,libtool,binutils,gcc-core,gcc-g++,autoconf,automake,gettext", \
+               "db_gecos": "ANY",
+               "with_sage": [True, False]}  # sage package manager https://github.com/svnpenn/sage
+    default_options = "packages=pkg-config,make,libtool,binutils,gcc-core,gcc-g++,autoconf,automake,gettext,curl", \
                       "additional_packages=None", \
                       "exclude_files=None", \
                       "no_acl=False", \
@@ -42,7 +43,8 @@ class CygwinInstallerConan(ConanFile):
                       "db_enum=None", \
                       "db_home=None", \
                       "db_shell=None", \
-                      "db_gecos=None"
+                      "db_gecos=None", \
+                      "with_sage=True"
 
     @property
     def os(self):
@@ -118,6 +120,14 @@ none /cygdrive cygdrive binary,posix=0,user 0 0""",
 @CYGWIN_ROOT@/bin /usr/bin ntfs binary,auto,noacl           0 0
 @CYGWIN_ROOT@/lib /usr/lib ntfs binary,auto,noacl           0 0
 @CYGWIN_ROOT@     /        ntfs override,binary,auto,noacl  0 0""")
+
+        if self.options.with_sage:
+            usr_local = os.path.join(self.install_dir, 'usr', 'local')
+            bash = os.path.abspath(os.path.join(self.install_dir, 'bin', 'bash.exe'))
+            with tools.chdir(usr_local):
+                for package in ['velour', 'sage']:
+                    tools.get('https://codeload.github.com/svnpenn/%s/zip/master' % package)
+                    self.run('%s -l -c "cd /usr/local/%s-master && ./install.sh"' % (bash, package))
 
     def record_symlinks(self):
         symlinks = []
