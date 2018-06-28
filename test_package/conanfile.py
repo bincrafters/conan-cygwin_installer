@@ -5,8 +5,6 @@ from conans import ConanFile, tools
 from conans.errors import ConanException
 
 class TestPackage(ConanFile):
-    default_options = "cygwin_installer:no_acl=True", \
-                      "cygwin_installer:exclude_files=*/link.exe"
 
     def test(self):
         bash = tools.which("bash.exe")
