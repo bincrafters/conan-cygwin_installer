@@ -162,6 +162,10 @@ none /cygdrive cygdrive binary,posix=0,user 0 0""",
         symlinks = json.loads(tools.load(symlinks_json))
         for path in symlinks:
             full_path = os.path.join(self.package_folder, path)
+            output = subprocess.check_output(["attrib", full_path])
+            attribs = re.split(r"([A-Z]:|\\)\\", output.decode("ascii"))[0]
+            if 'S' in attribs:
+                break
             self.run('attrib -R +S "%s"' % full_path)
 
     def package_id(self):
