@@ -13,6 +13,23 @@ from conans import __version__ as conan_version
 from conans.model.version import Version
 
 
+def _get_file_attrs(glob):
+    try:
+        output = subprocess.check_output(["attrib", "/D", "/S", glob])
+        lines = util.files.decode_text(output).split("\r\n")
+    except (ValueError, IOError, subprocess.CalledProcessError, UnicodeDecodeError) as e:
+        raise ConanException("attrib run error: %s" % str(e))
+    attrib_re = re.compile(r'^([RASHOIXVPU ]+ )(([A-Z]:|\\)\\.*)')
+    files = []
+    for line in lines:
+        match_obj = attrib_re.match(line)
+        if match_obj:
+            attrs = match_obj.group(1).replace(' ', '')
+            path = match_obj.group(2)
+            files.append((path, attrs))
+    return files
+
+
 class CygwinInstallerConan(ConanFile):
     name = "cygwin_installer"
     version = "2.9.0"
@@ -132,21 +149,9 @@ none /cygdrive cygdrive binary,posix=0,user 0 0""",
                     self.run('%s -l -c "cd /usr/local/%s-master && ./install.sh"' % (bash, package))
 
     def record_symlinks(self):
-        symlinks = []
         root = os.path.join(self.build_folder, self.install_dir)
-        try:
-            output = subprocess.check_output(["attrib", "/S", "/D", os.path.join(root, '*')])
-            lines = util.files.decode_text(output).split("\r\n")
-        except (ValueError, IOError, subprocess.CalledProcessError, UnicodeDecodeError) as e:
-            raise ConanException("attrib run error: %s" % str(e))
-        attrib_re = re.compile(r'^([RASHOIXVPU ]+ )([A-Z]:.*)')
-        for line in lines:
-            match_obj = attrib_re.match(line)
-            if match_obj:
-                flags = match_obj.group(1)
-                path = match_obj.group(2)
-                if "S" in flags:
-                    symlinks.append(os.path.relpath(path, root))
+        symlinks = [os.path.relpath(path, root)
+                    for (path, attrs) in _get_file_attrs(os.path.join(root, '*')) if "S" in attrs]
         symlinks_json = os.path.join(self.package_folder, "symlinks.json")
         tools.save(symlinks_json, json.dumps(symlinks))
 
@@ -162,9 +167,8 @@ none /cygdrive cygdrive binary,posix=0,user 0 0""",
         symlinks = json.loads(tools.load(symlinks_json))
         for path in symlinks:
             full_path = os.path.join(self.package_folder, path)
-            output = subprocess.check_output(["attrib", full_path])
-            attribs = re.split(r"([A-Z]:|\\)\\", output.decode("ascii"))[0]
-            if 'S' in attribs:
+            attrs = _get_file_attrs(full_path)[0][1]
+            if 'S' in attrs:
                 break
             self.run('attrib -R +S "%s"' % full_path)
 
