@@ -13,9 +13,13 @@ from conans import __version__ as conan_version
 from conans.model.version import Version
 
 
-def _get_file_attrs(glob):
+def _get_file_attrs(glob, recursive=False):
     try:
-        output = subprocess.check_output(["attrib", "/D", "/S", glob])
+        cmd = ["attrib"]
+        if recursive:
+            cmd.extend(["/D", "/S"])
+        cmd.append(glob)
+        output = subprocess.check_output(cmd)
         lines = util.files.decode_text(output).split("\r\n")
     except (ValueError, IOError, subprocess.CalledProcessError, UnicodeDecodeError) as e:
         raise ConanException("attrib run error: %s" % str(e))
@@ -151,7 +155,8 @@ none /cygdrive cygdrive binary,posix=0,user 0 0""",
     def record_symlinks(self):
         root = os.path.join(self.build_folder, self.install_dir)
         symlinks = [os.path.relpath(path, root)
-                    for (path, attrs) in _get_file_attrs(os.path.join(root, '*')) if "S" in attrs]
+                    for (path, attrs) in _get_file_attrs(os.path.join(root, '*'), recursive=True)
+                    if "S" in attrs]
         symlinks_json = os.path.join(self.package_folder, "symlinks.json")
         tools.save(symlinks_json, json.dumps(symlinks))
 
