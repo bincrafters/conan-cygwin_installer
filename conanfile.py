@@ -60,7 +60,7 @@ class CygwinInstallerConan(ConanFile):
                "with_sage": [True, False]}  # sage package manager https://github.com/svnpenn/sage
     default_options = "packages=pkg-config,make,libtool,binutils,gcc-core,gcc-g++,autoconf,automake,gettext,curl", \
                       "additional_packages=None", \
-                      "exclude_files=None", \
+                      "exclude_files=*/link.exe", \
                       "no_acl=False", \
                       "cygwin=None", \
                       "db_enum=None", \
