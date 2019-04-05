@@ -148,9 +148,9 @@ none /cygdrive cygdrive binary,posix=0,user 0 0""",
             usr_local = os.path.join(self.install_dir, 'usr', 'local')
             bash = os.path.abspath(os.path.join(self.install_dir, 'bin', 'bash.exe'))
             with tools.chdir(usr_local):
-                for package in ['pear', 'lake']:
+                for package in ['lake', 'pear']:
                     tools.get('https://github.com/cup/%s/archive/master.zip' % package)
-                    self.run('%s -l -c "cd /usr/local/%s-master && ./setup.sh"' % (bash, package))
+                    self.run('%s -l -c "cd /usr/local/%s-master && ./setup.sh -i"' % (bash, package))
 
     def record_symlinks(self):
         root = os.path.join(self.build_folder, self.install_dir)
