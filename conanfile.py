@@ -150,7 +150,7 @@ none /cygdrive cygdrive binary,posix=0,user 0 0""",
             with tools.chdir(usr_local):
                 for package in ['velour', 'sage']:
                     tools.get('https://codeload.github.com/svnpenn/%s/zip/master' % package)
-                    self.run('%s -l -c "cd /usr/local/%s-master && ./install.sh"' % (bash, package))
+                    self.run('%s -l -c "cd /usr/local/%s-master && ./setup.sh"' % (bash, package))
 
     def record_symlinks(self):
         root = os.path.join(self.build_folder, self.install_dir)
