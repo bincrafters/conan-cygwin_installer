@@ -57,7 +57,7 @@ class CygwinInstallerConan(ConanFile):
                "db_home": "ANY",
                "db_shell": "ANY",
                "db_gecos": "ANY",
-               "with_sage": [True, False]}  # sage package manager https://github.com/svnpenn/sage
+               "with_pear": [True, False]}  # pear package manager https://github.com/cup/pear
     default_options = "packages=pkg-config,make,libtool,binutils,gcc-core,gcc-g++,autoconf,automake,gettext,curl", \
                       "additional_packages=None", \
                       "exclude_files=*/link.exe", \
@@ -67,7 +67,7 @@ class CygwinInstallerConan(ConanFile):
                       "db_home=None", \
                       "db_shell=None", \
                       "db_gecos=None", \
-                      "with_sage=True"
+                      "with_pear=True"
 
     @property
     def os(self):
@@ -144,12 +144,12 @@ none /cygdrive cygdrive binary,posix=0,user 0 0""",
 @CYGWIN_ROOT@/lib /usr/lib ntfs binary,auto,noacl           0 0
 @CYGWIN_ROOT@     /        ntfs override,binary,auto,noacl  0 0""")
 
-        if self.options.with_sage:
+        if self.options.with_pear:
             usr_local = os.path.join(self.install_dir, 'usr', 'local')
             bash = os.path.abspath(os.path.join(self.install_dir, 'bin', 'bash.exe'))
             with tools.chdir(usr_local):
-                for package in ['velour', 'sage']:
-                    tools.get('https://codeload.github.com/svnpenn/%s/zip/master' % package)
+                for package in ['pear', 'lake']:
+                    tools.get('https://github.com/cup/%s/archive/master.zip' % package)
                     self.run('%s -l -c "cd /usr/local/%s-master && ./setup.sh"' % (bash, package))
 
     def record_symlinks(self):
