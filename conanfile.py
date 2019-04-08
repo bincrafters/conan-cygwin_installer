@@ -203,6 +203,8 @@ none /cygdrive cygdrive binary,posix=0,user 0 0""",
 
         self.output.info("Appending PATH env var with : " + cygwin_bin)
         self.env_info.path.append(cygwin_bin)
+        
+        self.cpp_info.libdirs = []
 
         if self.options.cygwin:
             self.output.info("Creating CYGWIN env var : %s" % self.options.cygwin)
