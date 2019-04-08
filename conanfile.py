@@ -205,6 +205,7 @@ none /cygdrive cygdrive binary,posix=0,user 0 0""",
         self.env_info.path.append(cygwin_bin)
         
         self.cpp_info.libdirs = []
+        self.cpp_info.includedirs = []
 
         if self.options.cygwin:
             self.output.info("Creating CYGWIN env var : %s" % self.options.cygwin)
