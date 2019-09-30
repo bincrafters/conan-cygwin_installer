@@ -10,7 +10,7 @@ import json
 import re
 import shutil
 from conans import __version__ as conan_version
-from conans.model.version import Version
+from conans.tools import Version
 
 
 def _get_file_attrs(glob, recursive=False):
@@ -58,16 +58,7 @@ class CygwinInstallerConan(ConanFile):
                "db_shell": "ANY",
                "db_gecos": "ANY",
                "with_sage": [True, False]}  # sage package manager https://github.com/svnpenn/sage
-    default_options = "packages=pkg-config,make,libtool,binutils,gcc-core,gcc-g++,autoconf,automake,gettext,curl", \
-                      "additional_packages=None", \
-                      "exclude_files=None", \
-                      "no_acl=False", \
-                      "cygwin=None", \
-                      "db_enum=None", \
-                      "db_home=None", \
-                      "db_shell=None", \
-                      "db_gecos=None", \
-                      "with_sage=True"
+    default_options = {'packages': 'pkg-config,make,libtool,binutils,gcc-core,gcc-g++,autoconf,automake,gettext,curl', 'additional_packages': 'None', 'exclude_files': 'None', 'no_acl': False, 'cygwin': 'None', 'db_enum': 'None', 'db_home': 'None', 'db_shell': 'None', 'db_gecos': 'None', 'with_sage': True}
 
     @property
     def os(self):
