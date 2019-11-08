@@ -1,6 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-
 from conans import ConanFile, tools, util
 from conans.errors import ConanException
 import os
@@ -41,7 +38,6 @@ class CygwinInstallerConan(ConanFile):
     description = "Cygwin is a distribution of popular GNU and other Open Source tools running on Microsoft Windows"
     url = "https://github.com/bincrafters/conan-cygwin_installer"
     homepage = "https://www.cygwin.com"
-    author = "Bincrafters <bincrafters@gmail.com>"
     if conan_version < Version("0.99"):
         settings = {"os": ["Windows"], "arch": ["x86", "x86_64"]}
     else:
