@@ -4,7 +4,7 @@
 |---------|-----------|--------|
 |[![Download](https://api.bintray.com/packages/bincrafters/public-conan/cygwin_installer%3Abincrafters/images/download.svg) ](https://bintray.com/bincrafters/public-conan/cygwin_installer%3Abincrafters/_latestVersion)|[![Build status](https://ci.appveyor.com/api/projects/status/github/bincrafters/conan-cygwin_installer?svg=true)](https://ci.appveyor.com/project/BinCrafters/conan-cygwin-installer)|N/A
 
-## Conan.io Information
+## Conan Information
 
 Bincrafters packages can be found in the following public Conan repository:
 
@@ -21,8 +21,6 @@ If you wish to report an issue or make a request for a Bincrafters package, plea
 ## General Information
 
 This GIT repository is managed by the Bincrafters team and holds files related to Conan.io.  For detailed information about Bincrafters and Conan.io, please visit the following resources:
-
-[Bincrafters Wiki - Common README](https://github.com/bincrafters/community/wiki/Common-README.md)
 
 [Bincrafters Technical Documentation](http://bincrafters.readthedocs.io/en/latest/)
 
@@ -43,5 +41,3 @@ The contents of this GIT repository are completely separate from the software be
 ### License for Bincrafters recipe:
 
     ~/.conan/data/<pkg_name>/<pkg_version>/bincrafters/export/LICENSE.md
-
-	

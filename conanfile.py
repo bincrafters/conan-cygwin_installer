@@ -33,15 +33,13 @@ def _get_file_attrs(glob, recursive=False):
 
 class CygwinInstallerConan(ConanFile):
     name = "cygwin_installer"
+    description = "Cygwin is a distribution of popular GNU and other Open Source tools running on Windows"
+    topics = ("conan", "cygwin", "tools")
     version = "2.9.0"
     license = "https://cygwin.com/COPYING"
-    description = "Cygwin is a distribution of popular GNU and other Open Source tools running on Microsoft Windows"
     url = "https://github.com/bincrafters/conan-cygwin_installer"
     homepage = "https://www.cygwin.com"
-    if conan_version < Version("0.99"):
-        settings = {"os": ["Windows"], "arch": ["x86", "x86_64"]}
-    else:
-        settings = {"os_build": ["Windows"], "arch_build": ["x86", "x86_64"]}
+    settings = {"os_build": ["Windows"], "arch_build": ["x86", "x86_64"]}
     install_dir = 'cygwin-install'
     short_paths = True
     options = {"packages": "ANY",  # Comma separated, https://cygwin.com/packages/package_list.html
@@ -54,7 +52,18 @@ class CygwinInstallerConan(ConanFile):
                "db_shell": "ANY",
                "db_gecos": "ANY",
                "with_sage": [True, False]}  # sage package manager https://github.com/svnpenn/sage
-    default_options = {'packages': 'pkg-config,make,libtool,binutils,gcc-core,gcc-g++,autoconf,automake,gettext,curl', 'additional_packages': 'None', 'exclude_files': 'None', 'no_acl': False, 'cygwin': 'None', 'db_enum': 'None', 'db_home': 'None', 'db_shell': 'None', 'db_gecos': 'None', 'with_sage': True}
+    default_options = {
+        'packages': 'pkg-config,make,libtool,binutils,gcc-core,gcc-g++,autoconf,automake,gettext,curl',
+        'additional_packages': 'None',
+        'exclude_files': 'None',
+        'no_acl': False,
+        'cygwin': 'None',
+        'db_enum': 'None',
+        'db_home': 'None',
+        'db_shell': 'None',
+        'db_gecos': 'None',
+        'with_sage': True
+    }
 
     @property
     def os(self):
