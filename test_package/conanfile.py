@@ -1,5 +1,5 @@
 from conans import ConanFile, tools
-from conans.errors import ConanException
+from conan.errors import ConanException
 
 class TestPackage(ConanFile):
 

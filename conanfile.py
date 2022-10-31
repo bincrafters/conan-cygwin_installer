@@ -1,5 +1,5 @@
 from conans import ConanFile, tools, util
-from conans.errors import ConanException
+from conan.errors import ConanException
 import os
 import tempfile
 import subprocess
