@@ -1,16 +1,18 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from conans import ConanFile, tools, util
-from conans.errors import ConanException
+from conan import ConanFile
+from conan.tools.files import chdir, copy, get, download, load, replace_in_file, save
+from conans.errors import ConanException, ConanInvalidConfiguration
 import os
 import tempfile
 import subprocess
 import json
 import re
 import shutil
-from conans import __version__ as conan_version
-from conans.model.version import Version
+
+
+required_conan_version = ">=1.47.0"
 
 
 def _get_file_attrs(glob, recursive=False):
@@ -20,7 +22,7 @@ def _get_file_attrs(glob, recursive=False):
             cmd.extend(["/D", "/S"])
         cmd.append(glob)
         output = subprocess.check_output(cmd)
-        lines = util.files.decode_text(output).split("\r\n")
+        lines = output.decode().split("\r\n")
     except (ValueError, IOError, subprocess.CalledProcessError, UnicodeDecodeError) as e:
         raise ConanException("attrib run error: %s" % str(e))
     attrib_re = re.compile(r'^([RASHOIXVPU ]+ )(([A-Z]:|\\)\\.*)')
@@ -41,53 +43,47 @@ class CygwinInstallerConan(ConanFile):
     description = "Cygwin is a distribution of popular GNU and other Open Source tools running on Microsoft Windows"
     url = "https://github.com/bincrafters/conan-cygwin_installer"
     homepage = "https://www.cygwin.com"
-    author = "Bincrafters <bincrafters@gmail.com>"
-    if conan_version < Version("0.99"):
-        settings = {"os": ["Windows"], "arch": ["x86", "x86_64"]}
-    else:
-        settings = {"os_build": ["Windows"], "arch_build": ["x86", "x86_64"]}
+    settings = "os", "arch"
     install_dir = 'cygwin-install'
     short_paths = True
-    options = {"packages": "ANY",  # Comma separated, https://cygwin.com/packages/package_list.html
-               "additional_packages": "ANY",  # Comma separated, https://cygwin.com/packages/package_list.html
-               "exclude_files": "ANY",  # Comma separated list of file patterns to exclude from the package
+    options = {"packages": ["ANY"],  # Comma separated, https://cygwin.com/packages/package_list.html
+               "additional_packages": [None, "ANY"],  # Comma separated, https://cygwin.com/packages/package_list.html
+               "exclude_files": [None, "ANY"],  # Comma separated list of file patterns to exclude from the package
                "no_acl": [True, False],
-               "cygwin": "ANY",  # https://cygwin.com/cygwin-ug-net/using-cygwinenv.html
-               "db_enum": "ANY",  # https://cygwin.com/cygwin-ug-net/ntsec.html#ntsec-mapping-nsswitch
-               "db_home": "ANY",
-               "db_shell": "ANY",
-               "db_gecos": "ANY",
+               "cygwin": [None, "ANY"],  # https://cygwin.com/cygwin-ug-net/using-cygwinenv.html
+               "db_enum": [None, "ANY"],  # https://cygwin.com/cygwin-ug-net/ntsec.html#ntsec-mapping-nsswitch
+               "db_home": [None, "ANY"],
+               "db_shell": [None, "ANY"],
+               "db_gecos": [None, "ANY"],
                "with_pear": [True, False]}  # pear package manager https://github.com/cup/pear
-    default_options = "packages=pkg-config,make,libtool,binutils,gcc-core,gcc-g++,autoconf,automake,gettext,curl", \
-                      "additional_packages=None", \
-                      "exclude_files=*/link.exe", \
-                      "no_acl=False", \
-                      "cygwin=None", \
-                      "db_enum=None", \
-                      "db_home=None", \
-                      "db_shell=None", \
-                      "db_gecos=None", \
-                      "with_pear=True"
+    default_options = {
+        'packages': 'pkg-config,make,libtool,binutils,gcc-core,gcc-g++,autoconf,automake,gettext,curl',
+        'additional_packages': None,
+        'exclude_files': None,
+        'no_acl': False,
+        'cygwin': None,
+        'db_enum': None,
+        'db_home': None,
+        'db_shell': None,
+        'db_gecos': None,
+        'with_pear': False  # Pear repo mentioned above doesn't exist anymore
+    }
 
-    @property
-    def os(self):
-        return self.settings.get_safe("os_build") or self.settings.get_safe("os")
-
-    @property
-    def arch(self):
-        return self.settings.get_safe("arch_build") or self.settings.get_safe("arch")
+    def validate(self):
+        if self.settings.os != "Windows":
+            raise ConanInvalidConfiguration("{} is not supported on {}".format(self.name, self.settings.os))
 
     def build(self):
-        filename = "setup-%s.exe" % self.arch
+        filename = "setup-%s.exe" % self.settings.arch
         url = "https://cygwin.com/%s" % filename
-        tools.download(url, filename)
+        download(self, url, filename)
 
         if not os.path.isdir(self.install_dir):
             os.makedirs(self.install_dir)
 
         # https://cygwin.com/faq/faq.html#faq.setup.cli
         command = filename
-        command += ' --arch %s' % self.arch
+        command += ' --arch %s' % self.settings.arch
         # Disable creation of desktop and start menu shortcuts
         command += ' --no-shortcuts'
         # Do not check for and enforce running as Administrator
@@ -136,7 +132,7 @@ class CygwinInstallerConan(ConanFile):
             fstab = os.path.join(self.install_dir, 'etc', 'fstab')
             fstab_in = fstab + ".in"
             shutil.copyfile(fstab, fstab_in)
-            tools.replace_in_file(fstab_in,
+            replace_in_file(self, fstab_in,
 """# This is default anyway:
 none /cygdrive cygdrive binary,posix=0,user 0 0""",
 """none /cygdrive cygdrive noacl,binary,posix=0,user 0 0
@@ -147,9 +143,9 @@ none /cygdrive cygdrive binary,posix=0,user 0 0""",
         if self.options.with_pear:
             usr_local = os.path.join(self.install_dir, 'usr', 'local')
             bash = os.path.abspath(os.path.join(self.install_dir, 'bin', 'bash.exe'))
-            with tools.chdir(usr_local):
+            with chdir(self, usr_local):
                 for package in ['lake', 'pear']:
-                    tools.get('https://github.com/cup/%s/archive/master.zip' % package)
+                    get(self, 'https://github.com/cup/%s/archive/master.zip' % package)
                     self.run('%s -l -c "cd /usr/local/%s-master && ./setup.sh -i"' % (bash, package))
 
     def record_symlinks(self):
@@ -158,18 +154,20 @@ none /cygdrive cygdrive binary,posix=0,user 0 0""",
                     for (path, attrs) in _get_file_attrs(os.path.join(root, '*'), recursive=True)
                     if "S" in attrs]
         symlinks_json = os.path.join(self.package_folder, "symlinks.json")
-        tools.save(symlinks_json, json.dumps(symlinks))
+        save(self, symlinks_json, json.dumps(symlinks))
 
     def package(self):
         self.record_symlinks()
         excludes = None
         if self.options.exclude_files:
             excludes = tuple(str(self.options.exclude_files).split(","))
-        self.copy(pattern="*", dst=".", src=self.install_dir, excludes=excludes)
+        copy(self, pattern="*", dst=self.package_folder,
+                                src=os.path.join(self.build_folder, self.install_dir),
+                                excludes=excludes)
 
     def fix_symlinks(self):
         symlinks_json = os.path.join(self.package_folder, "symlinks.json")
-        symlinks = json.loads(tools.load(symlinks_json))
+        symlinks = json.loads(load(self, symlinks_json))
         for path in symlinks:
             full_path = os.path.join(self.package_folder, path)
             attrs = _get_file_attrs(full_path)[0][1]
@@ -193,7 +191,7 @@ none /cygdrive cygdrive binary,posix=0,user 0 0""",
             fstab = os.path.join(cygwin_root, 'etc', 'fstab')
             self.output.info("Updating /etc/fstab")
             shutil.copyfile(fstab + ".in", fstab)
-            tools.replace_in_file(fstab, "@CYGWIN_ROOT@", cygwin_root_fs)
+            replace_in_file(self, fstab, "@CYGWIN_ROOT@", cygwin_root_fs)
 
         self.output.info("Creating CYGWIN_ROOT env var : %s" % cygwin_root)
         self.env_info.CYGWIN_ROOT = cygwin_root
@@ -203,7 +201,7 @@ none /cygdrive cygdrive binary,posix=0,user 0 0""",
 
         self.output.info("Appending PATH env var with : " + cygwin_bin)
         self.env_info.path.append(cygwin_bin)
-        
+
         self.cpp_info.libdirs = []
         self.cpp_info.includedirs = []
 

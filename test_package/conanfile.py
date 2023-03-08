@@ -1,19 +1,17 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from conans import ConanFile, tools
-from conans.errors import ConanException
+from conan import ConanFile
 
 class TestPackage(ConanFile):
+    settings = "os", "arch"
+    generators = "VirtualBuildEnv"
+    test_type = "explicit"
+
+    def build_requirements(self):
+        self.tool_requires(self.tested_reference_str)
 
     def test(self):
-        bash = tools.which("bash.exe")
-
-        if bash:
-            self.output.info("using bash.exe from: " + bash)
-        else:
-            raise ConanException("No instance of bash.exe could be found on %PATH%")
-
         self.run('cygcheck -c')
         self.run('bash.exe -c ^"uname -a^"')
         self.run('bash.exe -c ^"test -L /etc/networks^"')
