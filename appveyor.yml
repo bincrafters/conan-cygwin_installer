@@ -1,23 +1,18 @@
-build: false
-
 environment:
-    PYTHON: "C:\\Python27"
-    PYTHON_VERSION: "2.7.8"
-    PYTHON_ARCH: "32"
+  PYTHON_HOME: "C:\\Python37"
 
-    matrix:
-        - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
-          CONAN_VISUAL_VERSIONS: 15
-          CONAN_ARCHS: x86
-        - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
-          CONAN_VISUAL_VERSIONS: 15
-          CONAN_ARCHS: x86_64
+  matrix:
+    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
+      CONAN_VISUAL_VERSIONS: 15
+      CONAN_ARCHS: x86_64
+    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
+      CONAN_VISUAL_VERSIONS: 16
+      CONAN_ARCHS: x86_64
 
 install:
-  - set PATH=%PATH%;%PYTHON%/Scripts/
-  - pip.exe install conan --upgrade
-  - pip.exe install conan_package_tools bincrafters_package_tools
+  - set PATH=%PYTHON_HOME%;%PYTHON_HOME%/Scripts/;%PATH%
+  - pip.exe install bincrafters_package_tools
   - conan user # It creates the conan data directory
 
-test_script:
-  - python build.py
+build_script:
+  - bincrafters-package-tools --auto
